@@ -1,10 +1,14 @@
-# clocksync (v1.2)
+# clocksync (v1.2.1)
 
 **ESP32 Fake Radio Clock Station**
 
 `clocksync` allows an ESP32 to emulate various Low-Frequency (LF) time signal stations, allowing you to sync radio-controlled clocks (JJY, WWVB, DCF77, MSF, etc.) even if you are out of range of the actual transmitters.
 
 This project is a maintained fork of the original `nisejjy` project by SASAKI Taroh, customized for modern hardware (M5 Atom Lite, ESP32-S3) with improved Web UI, stability, and signal framing.
+
+### What's New in v1.2.1
+
+- **Fix WWVB DST bits**: Changed default TZ from `"UTC0"` to `"PST8PDT,M3.2.0,M11.1.0"`. With `"UTC0"`, DST status bits were always 0, causing clocks to stay on standard time after DST started. Updated documentation and status display to clarify that WWVB DST bits are derived from the TZ setting.
 
 ## Features
 
@@ -64,7 +68,18 @@ This project is a maintained fork of the original `nisejjy` project by SASAKI Ta
     *   Open `clocksync.ino`.
     *   Find the line `#define TZ "..."`.
     *   Change the string to match your location (see examples in the file).
-    *   *Note*: For **WWVB**, it is best to use `"UTC0"` and let the code handle DST, or your clock might have a double-offset error.
+    *   For **WWVB**, set TZ to your US timezone so DST bits are correct. WWVB frame time is always UTC (via `gmtime()`), so there is no double-offset risk.
+    *   ESP32 requires a POSIX TZ string (not Olson names like `America/Los_Angeles`). Common US values:
+        | Region | POSIX TZ string |
+        | :--- | :--- |
+        | Pacific (LA, SF, Seattle) | `PST8PDT,M3.2.0,M11.1.0` |
+        | Mountain (Denver, Phoenix†) | `MST7MDT,M3.2.0,M11.1.0` |
+        | Central (Chicago, Dallas) | `CST6CDT,M3.2.0,M11.1.0` |
+        | Eastern (NYC, Miami) | `EST5EDT,M3.2.0,M11.1.0` |
+        | Hawaii | `HST10` |
+
+        †Arizona (no DST): use `MST7` instead.
+    *   **Other timezones**: Look up your POSIX TZ string by city name in [this table](https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv). On Mac/Linux, you can also extract it from your system's current timezone: `tail -1 /etc/localtime`
 3.  **Dependencies & Upload**:
     *   **Using Arduino IDE**:
         1.  **Add Board URL**: Go to `File` -> `Preferences` -> `Additional boards manager URLs` and add `https://static-cdn.m5stack.com/resource/arduino/package_m5stack_index.json`.
@@ -122,7 +137,7 @@ Control the device via Serial Monitor (115200 baud) or via HTTP (`http://clocksy
 | Station | Freq (kHz) | Location | Notes |
 | :--- | :--- | :--- | :--- |
 | **JJY** | 40 / 60 | Japan | Default is end-Low symbol shape. |
-| **WWVB** | 60 | USA | Uses UTC framing; DST bits automapped. |
+| **WWVB** | 60 | USA | UTC framing; DST bits derived from TZ setting. |
 | **DCF77** | 77.5 | Germany | "Start-Low" encoding. |
 | **MSF** | 60 | UK | Includes parity and DST bits. |
 | **BSF** | 77.5 | Taiwan | Quaternary encoding (uncertified). |
@@ -135,8 +150,8 @@ Control the device via Serial Monitor (115200 baud) or via HTTP (`http://clocksy
     *   **Volume**: Increase "Volume" (Drive Strength) to `g3` using the Serial/Web command.
     *   **Antenna**: Ensure your antenna wire isn't broken and the resistor is secure.
 *   **Clock shows wrong time**:
-    *   **Timezone**: Check the `#define TZ` line in `clocksync.ino`.
-    *   **Double Correction**: If using WWVB, use `"UTC0"` as your TZ. If you set it to `"EST+5"`, your clock might subtract 5 hours *again*, ending up 10 hours off.
+    *   **Timezone**: Check the `#define TZ` line in `clocksync.ino`. For WWVB, use a US POSIX timezone (see setup step 2).
+    *   **DST off by 1 hour (WWVB)**: If TZ is set to `"UTC0"`, DST bits will always be 0 and your clock won't spring forward. Set TZ to your US timezone.
 *   **Compilation Error**:
     *   `M5Atom.h: No such file`: You missed installing the M5Atom library in step 3.
 

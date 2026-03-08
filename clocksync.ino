@@ -1,5 +1,5 @@
 //
-// clocksync.ino - ESP32 fake radio clock station
+// clocksync.ino - ESP32 fake radio clock station (v1.2.1)
 //
 // Forked from 'nisejjy' by SASAKI Taroh (tarohs).
 // Maintained by Tanvach.
@@ -52,8 +52,10 @@
 
 char ssid[] = WIFI_SSID;
 char passwd[] = WIFI_PASS;
-// POSIX TZ string (see README for station-specific guidance)
-#define TZ "UTC0"  // e.g., "UTC0", "JST-9", "CET-1CEST,M3.5.0/2,M10.5.0/3"
+// POSIX TZ string — set to your local timezone (see README for examples).
+// WWVB requires a US timezone for correct DST bits.
+// Find yours: tail -1 /etc/localtime (Mac/Linux) or see README
+#define TZ "PST8PDT,M3.2.0,M11.1.0"  // US Pacific; see README for other zones
 
 // ------------------------------------------------------------------
 // Logging helpers (USB serial only; web UI shows status separately)
@@ -920,7 +922,8 @@ void prepareWWVBMinuteBits(time_t minuteStartUTC) {
   bits |= to_padded5_bcd(ut.tm_year % 100) << (59 - 53);
   bits |= (uint64_t)(is_leap_year_full(ut.tm_year + 1900) ? 1 : 0) << (59 - 55);
 
-  // Local DST flags: tomorrow and now, like txtempus
+  // DST flags (bits 57-58): derived from TZ via localtime_r().
+  // TZ must be set to a US timezone for correct WWVB DST indication.
   struct tm lt_now, lt_tom;
   time_t t_now_local = minuteStartUTC;
   localtime_r(&t_now_local, &lt_now);
@@ -1292,7 +1295,7 @@ int docmd(char *buf) {
     else if (buf[1] == '1') dstOverride = 1;    // DST
     else if (buf[1] == '2') dstOverride = 2;    // AUTO
     else return 0;
-    LOG_PRINTF("DST override: %s (DCF/MSF only; WWVB ignores)\n", dstOverride == 2 ? "auto" : (dstOverride ? "DST" : "STD"));
+    LOG_PRINTF("DST override: %s (DCF/MSF only; WWVB uses TZ-derived DST)\n", dstOverride == 2 ? "auto" : (dstOverride ? "DST" : "STD"));
     saveSettings();
     return 1;
   } else if (buf[0] == 'q' || buf[0] == 'Q') {  // WWVB pending override
@@ -1351,8 +1354,8 @@ void printhelp(void) {
   LOG_PRINTF("  NTP     : %s\n", ntpsync ? "on" : "off");
   LOG_PRINTF("  TZ      : %s\n", TZ);
   LOG_PRINTF("  Buzzer  : %s\n", buzzsw ? "on" : "off");
-  LOG_PRINTF("  DST ov  : %s (applies to DCF/MSF; WWVB ignores)\n", dstOverride == 2 ? "auto" : (dstOverride ? "DST" : "STD"));
-  LOG_PRINTF("  WWVB    : framing matches 'txtempus' (reference Raspberry Pi transmitter); UTC; DST bits now/tomorrow auto.\n");
+  LOG_PRINTF("  DST ov  : %s (DCF/MSF only; WWVB uses TZ-derived DST)\n", dstOverride == 2 ? "auto" : (dstOverride ? "DST" : "STD"));
+  LOG_PRINTF("  WWVB    : txtempus framing; time=UTC; DST bits from TZ (%s).\n", TZ);
 
   LOG_PRINTLN("\nCommands:");
   LOG_PRINTLN("  h           : show this help");
@@ -1366,7 +1369,7 @@ void printhelp(void) {
   LOG_PRINTLN("  g0|g1|g2|g3 : set GPIO drive (0=weakest,3=strongest)");
   LOG_PRINTLN("  f           : self-test: jumper radio pin to GPIO33, measure carrier");
   LOG_PRINTLN("  n0|n1       : (WWVB) legacy framing toggle — ignored; always txtempus framing");
-  LOG_PRINTLN("  x0|x1|x2    : force DST STD/DST/AUTO (DCF/MSF only; WWVB ignores)");
+  LOG_PRINTLN("  x0|x1|x2    : force DST STD/DST/AUTO (DCF/MSF only; WWVB uses TZ)");
   LOG_PRINTLN("  q0|q1|q2    : (WWVB) legacy \"pending\" toggle — ignored; always txtempus framing");
   LOG_PRINTLN("  sX          : set station to X (one of):");
   for (int i = 0; i < 7; i++) {
@@ -1392,8 +1395,8 @@ String generateStatusText(void) {
   s += "  TZ      : "; s += TZ; s += "\n";
   s += "  Buzzer  : "; s += (buzzsw ? "on" : "off"); s += "\n";
   s += "  LED     : "; s += (ledEnabled ? "on" : "off"); s += "\n";
-  s += "  DST ov  : "; s += (dstOverride==2?"auto":(dstOverride?"DST":"STD")); s += " (applies to DCF/MSF; WWVB ignores)\n";
-  s += "  WWVB    : framing matches 'txtempus' (reference Raspberry Pi transmitter); UTC; DST bits now/tomorrow auto.\n";
+  s += "  DST ov  : "; s += (dstOverride==2?"auto":(dstOverride?"DST":"STD")); s += " (DCF/MSF only; WWVB uses TZ-derived DST)\n";
+  s += "  WWVB    : txtempus framing; time=UTC; DST bits from TZ ("; s += TZ; s += ").\n";
   char tbuf[48];
   snprintf(tbuf, sizeof(tbuf), "  Now     : %04d-%02d-%02d %02d:%02d:%02d (local)\n",
            nowtm.tm_year + 1900, nowtm.tm_mon + 1, nowtm.tm_mday,
@@ -1411,7 +1414,7 @@ String generateStatusText(void) {
   s += "  g0|g1|g2|g3 : set GPIO drive (0=weakest,3=strongest)\n";
   s += "  f           : self-test: jumper radio pin to GPIO33, measure carrier\n";
   s += "  n0|n1       : (WWVB) legacy framing toggle — ignored; always txtempus framing\n";
-  s += "  x0|x1|x2    : force DST STD/DST/AUTO (DCF/MSF only; WWVB ignores)\n";
+  s += "  x0|x1|x2    : force DST STD/DST/AUTO (DCF/MSF only; WWVB uses TZ)\n";
   s += "  q0|q1|q2    : (WWVB) legacy \"pending\" toggle — ignored; always txtempus framing\n";
   s += "  sX          : set station to X (one of):\n";
   for (int i = 0; i < 7; i++) {

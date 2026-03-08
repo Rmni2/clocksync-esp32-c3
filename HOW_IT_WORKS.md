@@ -36,7 +36,7 @@ The original `nisejjy` implementation (and many simple Arduino emulators) often 
 ### The Solution (`txtempus` / `clocksync`)
 `clocksync` adopts the `txtempus` philosophy:
 1.  **UTC Base**: The framing bits (Minute, Hour, Day, Year) are populated using `gmtime()` (UTC).
-2.  **DST Flags**: DST status (Bit 57 "DST Tomorrow" and Bit 58 "DST Now") is calculated independently based on US DST rules, but applied to the UTC frame.
+2.  **DST Flags**: Bit 57 ("DST Tomorrow") and Bit 58 ("DST Now") are derived from the POSIX TZ setting via `localtime_r()`. For correct WWVB operation, `#define TZ` must be set to a US timezone (e.g., `"PST8PDT,M3.2.0,M11.1.0"`).
 3.  **Result**: The signal is indistinguishable from the real WWVB station. Your clock behaves exactly as it would with a real signal (correctly applying your local timezone settings).
 
 > **Reference**: [github.com/hzeller/txtempus](https://github.com/hzeller/txtempus)
