@@ -1,5 +1,5 @@
 //
-// clocksync.ino - ESP32 fake radio clock station (v1.2.1)
+// clocksync.ino - ESP32 fake radio clock station
 //
 // Forked from 'nisejjy' by SASAKI Taroh (tarohs).
 // Maintained by Tanvach.
@@ -7,6 +7,8 @@
 // See README.md for usage, hardware setup, and attribution.
 // See HOW_IT_WORKS.md for technical details on signal encoding.
 //
+
+#define VERSION "1.3"
 
 
 //...................................................................
@@ -1330,6 +1332,7 @@ void printbits60(void) {
 }
 
 void printhelp(void) {
+  LOG_PRINTF("clocksync v%s\n\n", VERSION);
   LOG_PRINTLN("Status:");
   LOG_PRINTF("  Station : %s\n", stationNames[currentStation]);
   LOG_PRINTF("  TX      : %s\n", txEnabled ? "enabled" : "disabled");
@@ -1369,6 +1372,7 @@ String generateStatusText(void) {
   s.reserve(512);
   // Capture current time at generation
   getlocaltime();
+  s += "clocksync v"; s += VERSION; s += "\n\n";
   s += "Status:\n";
   s += "  Station : "; s += stationNames[currentStation]; s += "\n";
   s += "  TX      : "; s += (txEnabled ? "enabled" : "disabled"); s += "\n";

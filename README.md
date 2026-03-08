@@ -1,4 +1,4 @@
-# clocksync (v1.2.1)
+# clocksync (v1.3)
 
 **ESP32 Fake Radio Clock Station**
 
@@ -6,7 +6,7 @@
 
 This project is a maintained fork of the original `nisejjy` project by SASAKI Taroh, customized for modern hardware (M5 Atom Lite, ESP32-S3) with improved Web UI, stability, and signal framing.
 
-### What's New in v1.2.1
+### What's New in v1.3
 
 - **Fix WWVB DST bits**: Changed default TZ from `"UTC0"` to `"PST8PDT,M3.2.0,M11.1.0"`. With `"UTC0"`, DST status bits were always 0, causing clocks to stay on standard time after DST started. Updated documentation and status display to clarify that WWVB DST bits are derived from the TZ setting.
 - **Remove dead `q` command**: Removed unused `q0/q1/q2` WWVB pending override command and related dead code (`wwvbPendingOverride`, `getWWVBPendFlag`).
