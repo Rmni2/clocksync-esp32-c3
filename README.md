@@ -9,6 +9,7 @@ This project is a maintained fork of the original `nisejjy` project by SASAKI Ta
 ### What's New in v1.2.1
 
 - **Fix WWVB DST bits**: Changed default TZ from `"UTC0"` to `"PST8PDT,M3.2.0,M11.1.0"`. With `"UTC0"`, DST status bits were always 0, causing clocks to stay on standard time after DST started. Updated documentation and status display to clarify that WWVB DST bits are derived from the TZ setting.
+- **Remove dead `q` command**: Removed unused `q0/q1/q2` WWVB pending override command and related dead code (`wwvbPendingOverride`, `getWWVBPendFlag`).
 
 ## Features
 
@@ -67,9 +68,9 @@ This project is a maintained fork of the original `nisejjy` project by SASAKI Ta
 2.  **Timezone (Critical)**:
     *   Open `clocksync.ino`.
     *   Find the line `#define TZ "..."`.
-    *   Change the string to match your location (see examples in the file).
-    *   For **WWVB**, set TZ to your US timezone so DST bits are correct. WWVB frame time is always UTC (via `gmtime()`), so there is no double-offset risk.
-    *   ESP32 requires a POSIX TZ string (not Olson names like `America/Los_Angeles`). Common US values:
+    *   Change the string to match your station. ESP32 requires a POSIX TZ string (not Olson names like `America/Los_Angeles`).
+    *   **WWVB (USA)**: Set TZ to your US timezone. WWVB frame time is always UTC (via `gmtime()`), so there is no double-offset risk — TZ only affects the DST status bits.
+
         | Region | POSIX TZ string |
         | :--- | :--- |
         | Pacific (LA, SF, Seattle) | `PST8PDT,M3.2.0,M11.1.0` |
@@ -79,7 +80,18 @@ This project is a maintained fork of the original `nisejjy` project by SASAKI Ta
         | Hawaii | `HST10` |
 
         †Arizona (no DST): use `MST7` instead.
-    *   **Other timezones**: Look up your POSIX TZ string by city name in [this table](https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv). On Mac/Linux, you can also extract it from your system's current timezone: `tail -1 /etc/localtime`
+
+    *   **Other stations**: These transmit local time directly, so TZ must match the station's native timezone:
+
+        | Station | Region | POSIX TZ string |
+        | :--- | :--- | :--- |
+        | JJY | Japan | `JST-9` |
+        | DCF77 | Germany / Central Europe | `CET-1CEST,M3.5.0/2,M10.5.0/3` |
+        | MSF | United Kingdom | `GMT0BST,M3.5.0/1,M10.5.0` |
+        | BSF | Taiwan | `CST-8` |
+        | BPC | China | `CST-8` |
+
+    *   **Lookup**: Find any POSIX TZ string by city name in [this table](https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv). On Mac/Linux: `tail -1 /etc/localtime`
 3.  **Dependencies & Upload**:
     *   **Using Arduino IDE**:
         1.  **Add Board URL**: Go to `File` -> `Preferences` -> `Additional boards manager URLs` and add `https://static-cdn.m5stack.com/resource/arduino/package_m5stack_index.json`.

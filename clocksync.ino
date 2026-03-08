@@ -283,7 +283,7 @@ volatile int overrideCarrier = 0;  // 1: force continuous carrier for self-test
 volatile uint32_t measCount = 0;   // edge counter for self-test
 int wwvbEncodeNextMinute = 0;      // 1: encode next minute (WWVB compatibility)
 int dstOverride = 2;               // 0=standard,1=DST,2=auto(nowtm.tm_isdst)
-int wwvbPendingOverride = 2;       // 0=off,1=on,2=auto(US DST 2h window)
+
 Preferences prefs;
 // Last command response to surface in web UI (optional detail)
 String lastCmdResp;
@@ -347,7 +347,7 @@ void printhelp(void);
 void IRAM_ATTR meas_isr(void);
 int isUSDSTPending2h(void);
 int getDSTFlag(void);
-int getWWVBPendFlag(void);
+
 
 // LEDC/timer helpers
 void setupCarrierLEDC(void);
@@ -1009,12 +1009,6 @@ int getDSTFlag(void) {
   return dstOverride ? 1 : 0;
 }
 
-int getWWVBPendFlag(void) {
-  if (wwvbPendingOverride == 2) {
-    return isUSDSTPending2h();
-  }
-  return wwvbPendingOverride ? 1 : 0;
-}
 
 // continuous (over 4 bit) BCD to write
 void bcdize(int v, int pos, int len) {
@@ -1298,14 +1292,6 @@ int docmd(char *buf) {
     LOG_PRINTF("DST override: %s (DCF/MSF only; WWVB uses TZ-derived DST)\n", dstOverride == 2 ? "auto" : (dstOverride ? "DST" : "STD"));
     saveSettings();
     return 1;
-  } else if (buf[0] == 'q' || buf[0] == 'Q') {  // WWVB pending override
-    if (buf[1] == '0') wwvbPendingOverride = 0;
-    else if (buf[1] == '1') wwvbPendingOverride = 1;
-    else if (buf[1] == '2') wwvbPendingOverride = 2;
-    else return 0;
-    LOG_PRINTF("WWVB pending override: %s (compatibility only; framing follows txtempus)\n", wwvbPendingOverride == 2 ? "auto" : (wwvbPendingOverride ? "on" : "off"));
-    saveSettings();
-    return 1;
   } else if (buf[0] == 'r' || buf[0] == 'R') {  // reset to defaults and clear persisted settings
     applyDefaultSettings();
     // Clear saved prefs so next boot uses defaults
@@ -1370,7 +1356,6 @@ void printhelp(void) {
   LOG_PRINTLN("  f           : self-test: jumper radio pin to GPIO33, measure carrier");
   LOG_PRINTLN("  n0|n1       : (WWVB) legacy framing toggle — ignored; always txtempus framing");
   LOG_PRINTLN("  x0|x1|x2    : force DST STD/DST/AUTO (DCF/MSF only; WWVB uses TZ)");
-  LOG_PRINTLN("  q0|q1|q2    : (WWVB) legacy \"pending\" toggle — ignored; always txtempus framing");
   LOG_PRINTLN("  sX          : set station to X (one of):");
   for (int i = 0; i < 7; i++) {
     LOG_PRINTF("    s%c : %s\n", stationCmds[i], stationNames[i]);
@@ -1415,7 +1400,6 @@ String generateStatusText(void) {
   s += "  f           : self-test: jumper radio pin to GPIO33, measure carrier\n";
   s += "  n0|n1       : (WWVB) legacy framing toggle — ignored; always txtempus framing\n";
   s += "  x0|x1|x2    : force DST STD/DST/AUTO (DCF/MSF only; WWVB uses TZ)\n";
-  s += "  q0|q1|q2    : (WWVB) legacy \"pending\" toggle — ignored; always txtempus framing\n";
   s += "  sX          : set station to X (one of):\n";
   for (int i = 0; i < 7; i++) {
     s += "    s"; s += stationCmds[i]; s += " : "; s += stationNames[i]; s += "\n";
@@ -1591,7 +1575,7 @@ void saveSettings(void) {
   prefs.putInt("ntp", ntpsync);
   prefs.putInt("buzz", buzzsw);
   prefs.putInt("dst", dstOverride);
-  prefs.putInt("wwvbPend", wwvbPendingOverride);
+
   prefs.putInt("led", ledEnabled);
   prefs.putInt("drive", driveStrength);
   prefs.end();
@@ -1624,10 +1608,6 @@ void loadSettings(void) {
   if (v == 0 || v == 1 || v == 2) {
     dstOverride = v;
   }
-  v = prefs.getInt("wwvbPend", -1);
-  if (v == 0 || v == 1 || v == 2) {
-    wwvbPendingOverride = v;
-  }
   v = prefs.getInt("led", -1);
   if (v == 0 || v == 1) {
     ledEnabled = v;
@@ -1656,7 +1636,6 @@ void applyDefaultSettings(void) {
   txEnabled = 1;
   buzzsw = 1;
   dstOverride = 2;
-  wwvbPendingOverride = 2;
   // NTP default: on
   ntpstop();
   ntpsync = 1;
