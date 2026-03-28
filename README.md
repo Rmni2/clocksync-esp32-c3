@@ -1,10 +1,15 @@
-# clocksync (v1.3)
+# clocksync (v1.3.1)
 
 **ESP32 Fake Radio Clock Station**
 
 `clocksync` allows an ESP32 to emulate various Low-Frequency (LF) time signal stations, allowing you to sync radio-controlled clocks (JJY, WWVB, DCF77, MSF, etc.) even if you are out of range of the actual transmitters.
 
 This project is a maintained fork of the original `nisejjy` project by SASAKI Taroh, customized for modern hardware (M5 Atom Lite, ESP32-S3) with improved Web UI, stability, and signal framing.
+
+### What's New in v1.3.1
+
+- **Prevent NVS flash wear**: Added `WiFi.persistent(false)` to stop the WiFi library from writing credentials to flash on every connect/disconnect cycle.
+- **Buzzer default off**: Buzzer now defaults to off on fresh install and reset.
 
 ### What's New in v1.3
 

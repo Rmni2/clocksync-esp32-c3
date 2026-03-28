@@ -8,7 +8,7 @@
 // See HOW_IT_WORKS.md for technical details on signal encoding.
 //
 
-#define VERSION "1.3"
+#define VERSION "1.3.1"
 
 
 //...................................................................
@@ -280,7 +280,7 @@ int radioout = 0,  // pin output values
   buzzout = 0;
 int ampmod;                        // 1 if radio out is active (vibrating), 0 if reducted,
                                    // at cuttent subsecond-second frame for current date-time
-int buzzsw = 1;                    // sound on/off
+int buzzsw = 0;                    // sound on/off
 volatile int overrideCarrier = 0;  // 1: force continuous carrier for self-test
 volatile uint32_t measCount = 0;   // edge counter for self-test
 int wwvbEncodeNextMinute = 0;      // 1: encode next minute (WWVB compatibility)
@@ -400,6 +400,8 @@ void setup(void) {
 
   // HTTP server provides control/status.
 
+  // Credentials are compiled in; no need to persist them to NVS flash.
+  WiFi.persistent(false);
   // Ensure max performance for network services
   WiFi.setSleep(false);
 
@@ -1638,7 +1640,7 @@ void applyDefaultSettings(void) {
   applyDriveStrength();
   // Defaults
   txEnabled = 1;
-  buzzsw = 1;
+  buzzsw = 0;
   dstOverride = 2;
   // NTP default: on
   ntpstop();
