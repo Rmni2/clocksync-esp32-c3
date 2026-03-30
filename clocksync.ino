@@ -8,7 +8,7 @@
 // See HOW_IT_WORKS.md for technical details on signal encoding.
 //
 
-#define VERSION "1.3.1"
+#define VERSION "1.3.1 - Rmni2"
 
 
 //...................................................................
@@ -19,19 +19,18 @@
 // note: {pin -> 330ohm -> 30cm loop antenna -> GND} works
 //     (33mW, but detuned length (super shorten), only very weak radiowave emitted).
 #define PIN_BUZZ (-1)   // no onboard buzzer on M5 Atom Lite
-#define PIN_LED (-1)    // use M5 Atom RGB LED instead
+#define PIN_LED (2)    // use M5 Atom RGB LED instead
 // Optional measurement input (jumper to radio pin for self-test)
 // Default: GPIO33.
 #define PIN_MEAS (33)
 // Optional button pin (default 39 for M5 Atom Lite)
-#define PIN_BUTTON (39)
+// #define PIN_BUTTON (39)
 
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <WebServer.h>
-#include <WebServer.h>
 // M5 Atom Lite support (RGB LED, button, etc.)
-#include <M5Atom.h>
+//#include <M5Atom.h>
 // Drive strength configuration for safe antenna drive
 #include "driver/gpio.h"
 // High-resolution timer for precise tick scheduling
@@ -392,9 +391,9 @@ void setup(void) {
   LOG_PRINT("started...\n");
 
   // Initialize M5 Atom Lite (Serial, no I2C, Display/LED enabled)
-  M5.begin(true, false, true);
+  //M5.begin(true, false, true);
   // Ensure onboard RGB LED is off initially
-  M5.dis.drawpix(0, 0x000000);
+  //M5.dis.drawpix(0, 0x000000);
 
   LOG_PRINTLN("\nUSB serial control ready (115200 bps). Type 'h' + Enter for help.");
 
@@ -404,7 +403,7 @@ void setup(void) {
   WiFi.persistent(false);
   // Ensure max performance for network services
   WiFi.setSleep(false);
-
+  
   // Load persisted settings before initializing subsystems
   loadSettings();
   if (ntpsync) {
@@ -441,11 +440,11 @@ void setup(void) {
   } else {
     if (ledEnabled) {
       // leave off initially; will blink based on ampmod in loop()
-      M5.dis.drawpix(0, 0x000000);
+      //M5.dis.drawpix(0, 0x000000);
       lastLedState = 0;
     } else {
       // ensure fully off and no further updates in loop when disabled
-      M5.dis.drawpix(0, 0x000000);
+      //M5.dis.drawpix(0, 0x000000);
       lastLedState = -2;
     }
   }
@@ -476,12 +475,12 @@ void loop() {
   }
 
   // Update M5 state (button, etc.)
-  M5.update();
-  if (M5.Btn.wasPressed()) {
-    setTxState(!txEnabled);
-    saveSettings();
-    LOG_PRINTF("Button: TX %s\n", txEnabled ? "enabled" : "disabled");
-  }
+  //M5.update();
+  //if (M5.Btn.wasPressed()) {
+  //  setTxState(!txEnabled);
+  //  saveSettings();
+  //  LOG_PRINTF("Button: TX %s\n", txEnabled ? "enabled" : "disabled");
+  //}
   // For generic ESP32 (if M5Atom lib excluded):
   // if (digitalRead(PIN_BUTTON) == LOW) { delay(50); if(digitalRead(PIN_BUTTON)==LOW) { ... } }
 
@@ -544,7 +543,7 @@ void loop() {
         }
       } else {
         if (lastLedState != desired) {
-          M5.dis.drawpix(0, desired ? 0x10ff10 : 0x000000);
+          //M5.dis.drawpix(0, desired ? 0x10ff10 : 0x000000);
           lastLedState = desired;
         }
       }
@@ -554,7 +553,7 @@ void loop() {
         if (PIN_LED >= 0) {
           pinMode(PIN_LED, INPUT);
         } else {
-          M5.dis.drawpix(0, 0x000000);
+          //M5.dis.drawpix(0, 0x000000);
         }
         lastLedState = -2;
       }
@@ -628,7 +627,7 @@ void setTxState(int enable) {
       if (PIN_LED >= 0) {
         digitalWrite(PIN_LED, LOW);
       } else {
-        M5.dis.drawpix(0, 0x000000);
+        //M5.dis.drawpix(0, 0x000000);
       }
       lastLedState = 0;
     }
@@ -1174,10 +1173,10 @@ int docmd(char *buf) {
       }
     } else {
       if (ledEnabled) {
-        M5.dis.drawpix(0, 0x000000);
+        //M5.dis.drawpix(0, 0x000000);
         lastLedState = 0;
       } else {
-        M5.dis.drawpix(0, 0x000000);
+        //M5.dis.drawpix(0, 0x000000);
         lastLedState = -2;
       }
     }
