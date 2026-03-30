@@ -642,6 +642,7 @@ void setstation(int station) {
   currentStation = station;
   tm0cycle = 80000 / st_cycle2[station];
   radiodiv = st_cycle2[station];
+  carrierHz = radiodiv * 500;
   LOG_PRINTF("  freq %fMHz, timer intr: 80M / (%d x %d), buzz/radio: /%d\n",
              (float)radiodiv / 2., tm0cycle, TM0RES, radiodiv);
   bits60 = st_bits[station];
