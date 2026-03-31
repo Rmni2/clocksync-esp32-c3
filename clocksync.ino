@@ -15,16 +15,31 @@
 // hardware config
 // Radio output pin (default 32). Grove pins 25 or 26 also work if you prefer using the Grove port;
 // avoid them if you need I2C on SDA/SCL. Stay within isSafeAtomPin().
-#define PIN_RADIO (32)
+
+//#define PIN_RADIO (6)
 // note: {pin -> 330ohm -> 30cm loop antenna -> GND} works
 //     (33mW, but detuned length (super shorten), only very weak radiowave emitted).
-#define PIN_BUZZ (-1)   // no onboard buzzer on M5 Atom Lite
-#define PIN_LED (2)    // use M5 Atom RGB LED instead
+//#define PIN_BUZZ (-1)   // no onboard buzzer on M5 Atom Lite
+//#define PIN_LED (8)    // use M5 Atom RGB LED instead
 // Optional measurement input (jumper to radio pin for self-test)
 // Default: GPIO33.
-#define PIN_MEAS (33)
+//#define PIN_MEAS (7)
 // Optional button pin (default 39 for M5 Atom Lite)
 // #define PIN_BUTTON (39)
+#if CONFIG_IDF_TARGET_ESP32C3
+  // --- ESP32-C3 Pins ---
+  #define PIN_RADIO (6)   
+  #define PIN_BUZZ (-1)   
+  #define PIN_LED (8)     
+  #define PIN_MEAS (7)    
+#else
+  // --- Classic ESP32 / M5 Atom Pins ---
+  #define PIN_RADIO (32)
+  #define PIN_BUZZ (-1)   
+  #define PIN_LED (2)    
+  #define PIN_MEAS (33)
+#endif
+
 
 #include <WiFi.h>
 #include <ESPmDNS.h>
@@ -449,6 +464,13 @@ void setup(void) {
 
 
 void loop() {
+  // Timeout for the AP to prevent poweroutages Locking it to ap mode
+  if (!hasConnectedOnce && millis() > 300000) {
+      LOG_PRINTLN("5 minutes passed with no WiFi. Rebooting...");
+      delay(1000);
+      ESP.restart();
+    }
+
   int buzzup2 = 0;  // legacy
   static char buf[128];
   static int bufp = 0;
@@ -1609,8 +1631,15 @@ void getlocaltime(void) {
 
 // Allowed radio output pins on Atom Lite (avoid 12, 27, 39, bootstraps)
 int isSafeAtomPin(int p) {
-  // Common breakouts and HY2.0
+#if CONFIG_IDF_TARGET_ESP32C3
+  // safe pins for C3
+  int allowed[] = { 0, 1, 3, 4, 5, 6, 7, 10, 20, 21 }; 
+#else
+  // safe pins for generic ESP32
   int allowed[] = { 19, 21, 22, 23, 25, 26, 32, 33 };
+#endif
+  // Common breakouts and HY2.0
+  //int allowed[] = { 0, 1, 3, 4, 5, 6, 7, 10, 20, 21 };
   for (unsigned i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++) {
     if (p == allowed[i]) {
       return 1;
