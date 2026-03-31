@@ -43,21 +43,13 @@
 // WiFi credentials are sourced from secrets.h (gitignored). An example
 // file is provided as secrets_example.h. If secrets.h is missing, the
 // example is used so the sketch still builds.
-#if __has_include("secrets.h")
-#include "secrets.h"
-#elif __has_include("secrets_example.h")
-#include "secrets_example.h"
-#else
-#error "Missing secrets.h or secrets_example.h"
-#endif
-
-char ssid[] = WIFI_SSID;
-char passwd[] = WIFI_PASS;
+char* ssid = strdup("12345678"); 
+char* passwd = strdup("12345678");
 // POSIX TZ string — set to your local timezone (see README for examples).
 // WWVB requires a US timezone for correct DST bits.
 // Find yours: tail -1 /etc/localtime (Mac/Linux) or see README
-#define TZ "PST8PDT,M3.2.0,M11.1.0"  // US Pacific; see README for other zones
-
+//#define TZ "PST8PDT,M3.2.0,M11.1.0"  // US Pacific; see README for other zones
+char* tzStr = strdup("PST8PDT,M3.2.0,M11.1.0");
 // ------------------------------------------------------------------
 // Logging helpers (USB serial only; web UI shows status separately)
 #define LOG_PRINT(x) do { Serial.print(x); } while (0)
@@ -398,6 +390,8 @@ void setup(void) {
   LOG_PRINTLN("\nUSB serial control ready (115200 bps). Type 'h' + Enter for help.");
 
   // HTTP server provides control/status.
+
+  WiFi.mode(WIFI_STA);
 
   // Credentials are compiled in; no need to persist them to NVS flash.
   WiFi.persistent(false);
@@ -1124,6 +1118,16 @@ int docmd(char *buf) {
     setlocaltime();
     LOG_PRINTF("set date: >>%s<<\n", buf + 1);
     return 1;
+  } else if (strlen(buf) >= 2 && (buf[0] == 't' || buf[0] == 'T') && (buf[1] == 'z' || buf[1] == 'Z')) { //Set SSID -- ss
+    LOG_PRINTF("TZ: >>%s<<\n", buf + 2);
+
+    char* tempTZ = strdup(buf + 2);
+    free(tzStr);
+    tzStr = tempTZ;
+    ntpsync = 1;
+    saveSettings();
+    return 1;
+
   } else if (buf[0] == 't' || buf[0] == 'T') {  // set time & start tick
     if (strlen(buf) != 7) {
       return 0;
@@ -1183,6 +1187,16 @@ int docmd(char *buf) {
     }
     saveSettings();
     return 1;
+  } else if (strlen(buf) >= 2 && (buf[0] == 's' || buf[0] == 'S') && (buf[1] == 's' || buf[1] == 'S')) { //Set SSID -- ss
+    LOG_PRINTF("SSID: >>%s<<\n", buf + 2);
+
+    char* tempSSID = strdup(buf + 2);
+    free(ssid);
+    ssid = tempSSID;
+    ntpsync = 1;
+    saveSettings();
+    return 1;
+  
   } else if (buf[0] == 's' || buf[0] == 'S') {  // set station
     char s[] =                                  //"jJkKwWdDhHmMbB"
       { 'j', 'J', 'k', 'K', 'w', 'W', 'd', 'D', 't', 'T', 'm', 'M', 'c', 'C', '\0' },
@@ -1194,6 +1208,15 @@ int docmd(char *buf) {
     } else {
       return 0;
     }
+  } else if (strlen(buf) >= 2 && (buf[0] == 'p' || buf[0] == 'P') && (buf[1] == 's' || buf[1] == 'S')) { //Set PASS -- ps
+    LOG_PRINTF("PASS: >>%s<<\n", buf + 2);
+    char* tempPASS = strdup(buf + 2);
+    free(passwd);
+    passwd = tempPASS;
+    ntpsync = 1;
+    saveSettings();
+    return 1;
+
   } else if (buf[0] == 'p' || buf[0] == 'P') {  // set radio output pin number
     // accepts decimal gpio number, e.g., p26
     int plen = strlen(buf);
@@ -1249,9 +1272,12 @@ int docmd(char *buf) {
   } else if (buf[0] == 'y' || buf[0] == 'Y') {  // NTP sync
     if (buf[1] == '0') {
       ntpsync = 0;
+      saveSettings();
       ntpstop();
+      saveSettings();
     } else if (buf[1] == '1') {
       ntpsync = 1;
+      saveSettings();
       ntpstart();
     } else {
       return 0;
@@ -1344,10 +1370,10 @@ void printhelp(void) {
   LOG_PRINTF("  Pin     : GPIO %d\n", pinRadio);
   LOG_PRINTF("  Drive   : %d (0=weak, 3=strong)\n", driveStrength);
   LOG_PRINTF("  NTP     : %s\n", ntpsync ? "on" : "off");
-  LOG_PRINTF("  TZ      : %s\n", TZ);
+  LOG_PRINTF("  TZ      : %s\n", tzStr);
   LOG_PRINTF("  Buzzer  : %s\n", buzzsw ? "on" : "off");
   LOG_PRINTF("  DST ov  : %s (DCF/MSF only; WWVB uses TZ-derived DST)\n", dstOverride == 2 ? "auto" : (dstOverride ? "DST" : "STD"));
-  LOG_PRINTF("  WWVB    : txtempus framing; time=UTC; DST bits from TZ (%s).\n", TZ);
+  LOG_PRINTF("  WWVB    : txtempus framing; time=UTC; DST bits from TZ (%s).\n", tzStr);
 
   LOG_PRINTLN("\nCommands:");
   LOG_PRINTLN("  h           : show this help");
@@ -1384,11 +1410,11 @@ String generateStatusText(void) {
   s += "  Pin     : GPIO "; s += String(pinRadio); s += "\n";
   s += "  Drive   : "; s += String(driveStrength); s += " (0=weak,3=strong)\n";
   s += "  NTP     : "; s += (ntpsync ? "on" : "off"); s += "\n";
-  s += "  TZ      : "; s += TZ; s += "\n";
+  s += "  TZ      : "; s += tzStr; s += "\n";
   s += "  Buzzer  : "; s += (buzzsw ? "on" : "off"); s += "\n";
   s += "  LED     : "; s += (ledEnabled ? "on" : "off"); s += "\n";
   s += "  DST ov  : "; s += (dstOverride==2?"auto":(dstOverride?"DST":"STD")); s += " (DCF/MSF only; WWVB uses TZ-derived DST)\n";
-  s += "  WWVB    : txtempus framing; time=UTC; DST bits from TZ ("; s += TZ; s += ").\n";
+  s += "  WWVB    : txtempus framing; time=UTC; DST bits from TZ ("; s += tzStr; s += ").\n";
   char tbuf[48];
   snprintf(tbuf, sizeof(tbuf), "  Now     : %04d-%02d-%02d %02d:%02d:%02d (local)\n",
            nowtm.tm_year + 1900, nowtm.tm_mon + 1, nowtm.tm_mday,
@@ -1508,7 +1534,7 @@ void ntpstart(void) {
   LOG_PRINTLN(ip);
   LOG_PRINTF("configuring NTP timezone...");
   // Use POSIX TZ string for automatic DST handling (see TZ macro)
-  configTzTime(TZ, "pool.ntp.org", "time.nist.gov");
+  configTzTime(tzStr, "pool.ntp.org", "time.nist.gov");
   for (int i = 0; i < 10 && !getLocalTime(&nowtm); i++) {
     LOG_PRINTF(".");
     delay(1000);
@@ -1585,11 +1611,37 @@ void saveSettings(void) {
 
   prefs.putInt("led", ledEnabled);
   prefs.putInt("drive", driveStrength);
+  
+  prefs.putString("ssid", ssid);  
+  prefs.putString("pass", passwd); 
+
+  prefs.putString("tz", tzStr);
+
   prefs.end();
 }
 
 void loadSettings(void) {
   prefs.begin("clocksync", true);
+
+  String s = prefs.getString("ssid", ssid); 
+  if (s.length() > 0) {
+    char* temp = strdup(s.c_str());
+    free(ssid); 
+    ssid = temp;                  
+  }
+  s = prefs.getString("pass", passwd); 
+  if (s.length() > 0) {
+    char* temp = strdup(s.c_str());
+    free(passwd);
+    passwd = temp;
+  }
+
+  s = prefs.getString("tz", tzStr); 
+  if (s.length() > 0) {
+    char* temp = strdup(s.c_str());
+    free(tzStr); 
+    tzStr = temp;
+  }
   int v;
   v = prefs.getInt("station", -1);
   if (v >= 0 && v <= SN_BPC) {
