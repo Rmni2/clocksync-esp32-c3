@@ -286,7 +286,7 @@ static int lastLedState = -1;      // -1 unknown, 0 off, 1 on, -2 disabled
 // WiFi Reconnect Tracking
 static unsigned long lastWiFiCheckTime = 0;
 const unsigned long WIFI_CHECK_INTERVAL = 60000; // 60 seconds
-
+bool hasConnectedOnce = false;
 // LEDC carrier generation (single output pin)
 
 // LEDC carrier generation (single output pin)
@@ -1553,10 +1553,13 @@ void ntpstart(void) {
     delay(1000);
   }
   if (i == 10) {
-    ntpsync = 0;
-    startAPMode();
+    if (!hasConnectedOnce) {
+      ntpsync = 0;
+      startAPMode();
+    }
     return;
   }
+  hasConnectedOnce = true;
   IPAddress ip = WiFi.localIP();
   LOG_PRINTF("IP Address: ");
   LOG_PRINTLN(ip);
