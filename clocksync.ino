@@ -1126,6 +1126,7 @@ int docmd(char *buf) {
     tzStr = tempTZ;
     ntpsync = 1;
     saveSettings();
+    ntpsync = 0;
     return 1;
 
   } else if (buf[0] == 't' || buf[0] == 'T') {  // set time & start tick
@@ -1195,6 +1196,7 @@ int docmd(char *buf) {
     ssid = tempSSID;
     ntpsync = 1;
     saveSettings();
+    ntpsync = 0;
     return 1;
   
   } else if (buf[0] == 's' || buf[0] == 'S') {  // set station
@@ -1215,6 +1217,7 @@ int docmd(char *buf) {
     passwd = tempPASS;
     ntpsync = 1;
     saveSettings();
+    ntpsync = 0;
     return 1;
 
   } else if (buf[0] == 'p' || buf[0] == 'P') {  // set radio output pin number
@@ -1388,6 +1391,9 @@ void printhelp(void) {
   LOG_PRINTLN("  f           : self-test: jumper radio pin to GPIO33, measure carrier");
   LOG_PRINTLN("  n0|n1       : (WWVB) legacy framing toggle — ignored; always txtempus framing");
   LOG_PRINTLN("  x0|x1|x2    : force DST STD/DST/AUTO (DCF/MSF only; WWVB uses TZ)");
+  LOG_PRINTLN("  ss          : change SSID to connect to (WiFi name)");
+  LOG_PRINTLN("  ps          : change Security Key (WiFi passsword)");
+  LOG_PRINTLN("  tz          : set POSIX TZ string:");
   LOG_PRINTLN("  sX          : set station to X (one of):");
   for (int i = 0; i < 7; i++) {
     LOG_PRINTF("    s%c : %s\n", stationCmds[i], stationNames[i]);
@@ -1433,6 +1439,9 @@ String generateStatusText(void) {
   s += "  f           : self-test: jumper radio pin to GPIO33, measure carrier\n";
   s += "  n0|n1       : (WWVB) legacy framing toggle — ignored; always txtempus framing\n";
   s += "  x0|x1|x2    : force DST STD/DST/AUTO (DCF/MSF only; WWVB uses TZ)\n";
+  s += "  ss          : change SSID to connect to (WiFi name)\n";
+  s += "  ps          : change Security Key (WiFi passsword)\n";
+  s += "  tz          : set POSIX TZ string:\n";
   s += "  sX          : set station to X (one of):\n";
   for (int i = 0; i < 7; i++) {
     s += "    s"; s += stationCmds[i]; s += " : "; s += stationNames[i]; s += "\n";
@@ -1509,10 +1518,28 @@ void setupWebServer(void) {
     LOG_PRINTF("HTTP server: http://%s.local/\n", DEVICENAME);
   } else {
     LOG_PRINTLN("HTTP server started (WiFi not connected yet)");
+
   }
 }
 
+void startAPMode() {
+  LOG_PRINTLN("Switching to Access Point Mode...");
+  
+  WiFi.disconnect(); 
 
+  IPAddress local_IP(1, 2, 3, 4);   
+  IPAddress gateway(1, 2, 3, 4);    
+  IPAddress subnet(255, 255, 255, 0); 
+
+  // Apply the custom IP configuration
+  WiFi.softAPConfig(local_IP, gateway, subnet);
+  
+  // Start the hotspot network
+  WiFi.softAP("clocksync_config"); 
+  
+  LOG_PRINT("Hotspot Active. http://");
+  LOG_PRINTLN(WiFi.softAPIP());
+}
 
 void ntpstart(void) {
   int i;
@@ -1527,6 +1554,7 @@ void ntpstart(void) {
   }
   if (i == 10) {
     ntpsync = 0;
+    startAPMode();
     return;
   }
   IPAddress ip = WiFi.localIP();
