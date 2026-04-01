@@ -1313,6 +1313,9 @@ int docmd(char *buf) {
       ntpsync = 1;
       ntpEnabled = 1;
       saveSettings();
+
+      WiFi.softAPdisconnect(true); // Turn off the AP broadcast
+      WiFi.mode(WIFI_STA);
       ntpstart();
     } else {
       return 0;
