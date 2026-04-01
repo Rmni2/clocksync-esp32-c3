@@ -1604,6 +1604,8 @@ void ntpstart(void) {
   LOG_PRINTLN(ip);
   LOG_PRINTF("configuring NTP timezone...");
 
+  sntp_set_sync_interval(3600000);
+
   sntp_set_time_sync_notification_cb(timeSyncCallback);
 
   // Use POSIX TZ string for automatic DST handling (see TZ macro)
