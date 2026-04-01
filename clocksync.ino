@@ -53,6 +53,7 @@
 // ESP-IDF LEDC driver
 #include "driver/ledc.h"
 #include <Preferences.h>
+#include "esp_sntp.h"
 #define DEVICENAME "clocksync"
 
 // WiFi credentials are sourced from secrets.h (gitignored). An example
@@ -265,6 +266,8 @@ int istimerstarted = 0;
 // TX enable/disable (controls whether the carrier + modulation scheduler are running)
 int txEnabled = 1;  // 1=enabled, 0=disabled
 
+volatile bool ntpJustSynced = false;
+
 int radioc = 0;  // 0..(RADIODIV - 1)
 int ampc = 0;    // 0..(AMPDIV - 1)
 int tssec = 0;   // 0..(SSECDIV - 1)
@@ -377,6 +380,7 @@ void prepareWWVBMinuteBits(time_t minuteStartUTC);
 int clampDriveCap(int cap);
 void applyDriveStrength(void);
 
+void timeSyncCallback(struct timeval *tv);
 //...................................................................
 // intr handler:
 //   this routine is called once every 1/2f sec (where f is radio freq).
@@ -470,6 +474,15 @@ void loop() {
       delay(1000);
       ESP.restart();
     }
+
+  if (ntpJustSynced) {
+    ntpJustSynced = false;
+    LOG_PRINTLN("Realigning tick phase...");
+    if (txEnabled) {
+      stoptimer();
+      starttimer(); 
+    }
+  }
 
   int buzzup2 = 0;  // legacy
   static char buf[128];
@@ -1563,6 +1576,10 @@ void startAPMode() {
   LOG_PRINTLN(WiFi.softAPIP());
 }
 
+void timeSyncCallback(struct timeval *tv) {
+  ntpJustSynced = true;
+}
+
 void ntpstart(void) {
   int i;
 
@@ -1586,6 +1603,9 @@ void ntpstart(void) {
   LOG_PRINTF("IP Address: ");
   LOG_PRINTLN(ip);
   LOG_PRINTF("configuring NTP timezone...");
+
+  sntp_set_time_sync_notification_cb(timeSyncCallback);
+
   // Use POSIX TZ string for automatic DST handling (see TZ macro)
   configTzTime(tzStr, "pool.ntp.org", "time.nist.gov");
   for (int i = 0; i < 10 && !getLocalTime(&nowtm); i++) {
