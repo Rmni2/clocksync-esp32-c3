@@ -265,6 +265,7 @@ volatile uint32_t buzzup = 0;  // inc if buzz cycle (/2) passed
 int istimerstarted = 0;
 // TX enable/disable (controls whether the carrier + modulation scheduler are running)
 int txEnabled = 1;  // 1=enabled, 0=disabled
+int ntpEnabled = 1; 
 
 volatile bool ntpJustSynced = false;
 
@@ -1159,9 +1160,7 @@ int docmd(char *buf) {
     char* tempTZ = strdup(buf + 2);
     free(tzStr);
     tzStr = tempTZ;
-    ntpsync = 1;
     saveSettings();
-    ntpsync = 0;
     return 1;
 
   } else if (buf[0] == 't' || buf[0] == 'T') {  // set time & start tick
@@ -1229,9 +1228,7 @@ int docmd(char *buf) {
     char* tempSSID = strdup(buf + 2);
     free(ssid);
     ssid = tempSSID;
-    ntpsync = 1;
     saveSettings();
-    ntpsync = 0;
     return 1;
   
   } else if (buf[0] == 's' || buf[0] == 'S') {  // set station
@@ -1250,9 +1247,7 @@ int docmd(char *buf) {
     char* tempPASS = strdup(buf + 2);
     free(passwd);
     passwd = tempPASS;
-    ntpsync = 1;
     saveSettings();
-    ntpsync = 0;
     return 1;
 
   } else if (buf[0] == 'p' || buf[0] == 'P') {  // set radio output pin number
@@ -1310,11 +1305,13 @@ int docmd(char *buf) {
   } else if (buf[0] == 'y' || buf[0] == 'Y') {  // NTP sync
     if (buf[1] == '0') {
       ntpsync = 0;
+      ntpEnabled = 0;
       saveSettings();
       ntpstop();
       saveSettings();
     } else if (buf[1] == '1') {
       ntpsync = 1;
+      ntpEnabled = 1;
       saveSettings();
       ntpstart();
     } else {
@@ -1687,7 +1684,7 @@ void saveSettings(void) {
   prefs.putInt("station", currentStation);
   prefs.putInt("tx", txEnabled);
   prefs.putInt("pin", pinRadio);
-  prefs.putInt("ntp", ntpsync);
+  prefs.putInt("ntp", ntpEnabled);
   prefs.putInt("buzz", buzzsw);
   prefs.putInt("dst", dstOverride);
 
@@ -1739,6 +1736,7 @@ void loadSettings(void) {
   }
   v = prefs.getInt("ntp", -1);
   if (v == 0 || v == 1) {
+    ntpEnabled = v;
     ntpsync = v;
   }
   v = prefs.getInt("buzz", -1);
