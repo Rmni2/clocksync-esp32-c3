@@ -116,8 +116,8 @@ This project is a fork of `clocksync` project by SASAKI Taroh (tarohs), customiz
 
     *   **Lookup**: Find any POSIX TZ string by city name in [this table](https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv). On Mac/Linux: `tail -1 /etc/localtime`
 4. **Finalizing**:
-    * look at the commands below to set your desired station.
-    * once your done with everything, reboot.
+    * Look at the commands below to set your desired station.
+    * Once you're done with everything, reboot.
 
 ### 3. Usage
 
