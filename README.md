@@ -27,7 +27,7 @@ This project is a fork of `clocksync` project by SASAKI Taroh (tarohs), customiz
 ### 1. Hardware Setup
 
 **Supported Boards**:
-- **M5Stack Atom Lite** (Recommended): Works out of the box. The RGB LED indicates status, and the button toggles transmission.
+- **NO NAME ESP32-C3 SuperMini** (Recommended)
 - **Generic ESP32 / ESP32-S3**: Compatible with standard DevKits.
 
 **Wiring Diagram**:
@@ -46,8 +46,7 @@ This project is a fork of `clocksync` project by SASAKI Taroh (tarohs), customiz
                                         +---------+
 ```
 
-1.  **Pin**: Connect one end of your antenna to `GPIO 32` (default).
-    *   *Note*: On M5Stack Atom Lite, this is a pin on the bottom header.
+1.  **Pin**: Connect one end of your antenna to `GPIO 6` (default) If Generic esp32 use `GPIO 32` (default).
 2.  **Ground**: Connect the other end of the antenna to a **Current Limiting Resistor** (220Ω - 330Ω), and then to `GND`.
     *   *Why a resistor?* It protects your ESP32 from drawing too much current, as the antenna coil has very low resistance.
 3.  **Antenna Types**:
@@ -116,8 +115,8 @@ This project is a fork of `clocksync` project by SASAKI Taroh (tarohs), customiz
 
     *   **Lookup**: Find any POSIX TZ string by city name in [this table](https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv). On Mac/Linux: `tail -1 /etc/localtime`
 4. **Finalizing**:
-    * Look at the commands below to set your desired station.
-    * Once you're done with everything, reboot.
+    * look at the commands below to set your desired station.
+    * once you're done with everything, reboot.
 
 ### 3. Usage
 
