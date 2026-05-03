@@ -59,7 +59,7 @@ This project is a fork of `clocksync` project by SASAKI Taroh (tarohs), customiz
         *   **77.5 kHz**: For DCF77 (Germany), BSF (Taiwan).
         *   **68.5 kHz**: For BPC (China).
     *   **Wire Loop**: A simple coil of wire (e.g., 30 turns of magnet wire around a water bottle). Short range, but works for any frequency.
-4.  **Placement**: Place your target watch/clock **inside** or **immediately next to** the antenna coil. This is a low-power near-field emulator; range is typically < 10cm.
+4.  **Placement**: Place your target watch/clock **above** or **near** the antenna coil (the signal can be too strong for your watch to understand). This is a low-power near-field emulator; range is typically < 10cm.
 
 ### 2. Software Configuration
 1.  **Upload the Firmware**:
