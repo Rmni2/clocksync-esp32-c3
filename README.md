@@ -5,7 +5,7 @@
 Video:
 [![Watch the video](https://img.youtube.com/vi/pbbZUizgu_k/maxresdefault.jpg)](https://youtu.be/pbbZUizgu_k)
 
-This project is a fork from SASAKI Taroh (tarohs)
+This project is a fork of Tanvach
 
 `clocksync` allows an ESP32 to emulate various Low-Frequency (LF) time signal stations, allowing you to sync radio-controlled clocks (JJY, WWVB, DCF77, MSF, etc.) even if you are out of range of the actual transmitters.
 
